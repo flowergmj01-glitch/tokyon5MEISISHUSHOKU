@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>東京観光：名詞修飾</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&family=Nunito+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #f3e5f5;
+            --card-bg: #ffffff;
+            --shadow: rgba(74, 20, 140, 0.15);
+            --primary: #5e35b1;           /* 更深的紫色，對比度更好 */
+            --secondary: #7e57c2;         /* 次要紫色 */
+            --text-main: #311b92;         /* 深藍紫色文字 */
+            --text-sub: #4527a0;          /* 次要文字 */
+            --accent: #d81b60;
+            --line-bg: #9fa8da;           /* LINE背景改為淡藍紫色 */
+            --line-bubble-left: #ffffff;
+            --line-bubble-right: #b3e5fc; /* 右側氣泡改為粉藍色 */
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color);
+            font-family: 'Nunito Sans', 'Noto Sans JP', sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; overflow: hidden; user-select: none;
+        }
+
+        #presentation-container {
+            width: 1280px; height: 720px;
+            position: relative;
+            background-color: var(--card-bg);
+            box-shadow: 0 15px 30px var(--shadow);
+            border-radius: 12px;
+            overflow: hidden;
+            user-select: text;
+        }
+
+        .slide {
+            width: 100%; height: 100%; display: none;
+            padding: 30px 60px; position: relative; z-index: 1;
+            flex-direction: column; justify-content: center;
+        }
+        .slide.active { display: flex; }
+
+        /* Canvas & Layers */
+        .drawing-canvas, .content-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .drawing-canvas { z-index: 50; pointer-events: none; }
+        .content-layer { z-index: 51; pointer-events: none; }
+
+        /* Typography - Size Increased */
+        h1, h2, h3 { font-family: 'Noto Serif JP', serif; color: var(--text-main); margin: 0; }
+        h1 { font-size: 64px; margin-bottom: 20px; }
+        h2 { font-size: 42px; margin-bottom: 25px; border-bottom: 4px solid var(--secondary); padding-bottom: 10px; width: 100%; }
+        h3 { font-size: 28px; margin-bottom: 10px; color: var(--secondary); }
+        p, li { color: var(--text-main); font-size: 24px; line-height: 1.7; margin-bottom: 8px; }
+        
+        /* Ruby Styling */
+        ruby { ruby-position: over; }
+        rt { font-size: 0.6em; color: var(--accent); font-weight: normal; }
+        
+        .cn-trans { color: var(--text-sub); font-size: 20px; display: block; margin-top: -2px; margin-bottom: 12px; opacity: 0.9; font-family: "Noto Sans TC", sans-serif; font-weight: 500; }
+
+        /* Layouts */
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; height: 100%; align-items: center; }
+        
+        /* Vocab Grid */
+        .vocab-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%;
+        }
+        .vocab-item {
+            background: rgba(255, 255, 255, 0.8); border: 2px solid #fff; padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center;
+        }
+        .vocab-word { font-size: 26px; font-weight: bold; color: var(--text-main); display: block;}
+        .vocab-mean { font-size: 20px; color: #555; display: block; margin-top: 5px;}
+
+        /* Grammar Box */
+        .grammar-container {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 25px;
+        }
+        .grammar-box {
+            background: rgba(255, 255, 255, 0.9); border-left: 8px solid var(--accent);
+            padding: 20px; border-radius: 0 12px 12px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .grammar-title { font-size: 26px; font-weight: bold; color: var(--primary); margin-bottom: 10px; display: block; }
+
+        /* LINE Chat */
+        .chat-container {
+            background-color: var(--line-bg); border-radius: 20px; padding: 25px;
+            height: 520px; overflow-y: auto; display: flex; flex-direction: column;
+            gap: 15px; border: 6px solid #fff; width: 100%; max-width: 550px; margin: 0 auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .chat-bubble {
+            padding: 12px 20px; border-radius: 20px; max-width: 90%;
+            font-size: 22px; position: relative; line-height: 1.5;
+        }
+        .chat-left { align-self: flex-start; background-color: var(--line-bubble-left); color: #333; border-bottom-left-radius: 5px; }
+        .chat-right { align-self: flex-end; background-color: var(--line-bubble-right); color: #333; border-bottom-right-radius: 5px; }
+        .chat-label { font-size: 14px; margin-bottom: 4px; color: white; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+        .chat-trans-text {
+            font-size: 18px; color: #fff; 
+            margin-top: 5px; margin-bottom: 10px; max-width: 90%;
+            font-family: "Noto Sans TC", sans-serif;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.3); font-weight: 500;
+        }
+        .chat-left-wrapper .chat-label { text-align: left; margin-left: 8px; }
+        .chat-left-wrapper .chat-trans-text { text-align: left; margin-left: 8px; align-self: flex-start; }
+        .chat-right-wrapper .chat-label { text-align: right; margin-right: 8px; }
+        .chat-right-wrapper .chat-trans-text { text-align: right; margin-right: 8px; align-self: flex-end; }
+        .chat-left-wrapper, .chat-right-wrapper { display: flex; flex-direction: column; width: 100%; }
+
+        /* Quiz Card Style */
+        .quiz-card {
+            background: #fff; border: 3px dashed var(--secondary); border-radius: 15px;
+            padding: 25px; margin-bottom: 15px; position: relative;
+        }
+        .quiz-blank {
+            display: inline-block; width: 180px; border-bottom: 3px solid var(--text-main);
+            text-align: center; color: transparent; cursor: pointer; font-weight: bold;
+        }
+        .quiz-blank.revealed { color: var(--accent); }
+
+        /* Draggable Elements */
+        .draggable-text { position: absolute; background: rgba(255,255,255,0.95); border: 2px dashed var(--primary); padding: 8px; cursor: move; z-index: 100; min-width: 50px; border-radius: 8px; font-size: 24px; }
+        .draggable-image { position: absolute; width: 250px; border: 3px dashed var(--primary); cursor: move; z-index: 99; resize: both; overflow: hidden; border-radius: 8px; }
+        .draggable-image img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+        .draggable-image:hover::after { content: 'Double click to delete'; position: absolute; bottom: 0; left: 0; background: rgba(0,0,0,0.6); color: white; width: 100%; font-size: 14px; text-align: center; padding: 5px; }
+
+        /* Toolbar */
+        #toolbar { 
+            position: fixed; top: 20px; left: 20px; background: white; padding: 12px 25px; 
+            border-radius: 50px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); 
+            display: flex; flex-direction: row; gap: 20px; z-index: 2000; align-items: center;
+        }
+        .tool-btn { background: none; border: none; font-size: 24px; cursor: pointer; padding: 10px; border-radius: 50%; width: 55px; height: 55px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+        .tool-btn:hover { background-color: #f0f0f0; transform: scale(1.1); }
+        .tool-btn.active { background: var(--primary); color: white; transform: scale(1.1); box-shadow: 0 4px 10px rgba(94, 53, 177, 0.4); }
+        
+        .nav-btn { 
+            position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.9); 
+            border: none; font-size: 40px; width: 70px; height: 70px; border-radius: 50%; 
+            cursor: pointer; z-index: 1500; color: var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: all 0.2s;
+        }
+        .nav-btn:hover { background: white; transform: translateY(-50%) scale(1.1); }
+        #prev-btn { left: 30px; } #next-btn { right: 30px; }
+        
+        .full-bg { background-size: cover; background-position: center; }
+        .overlay { background-color: rgba(255,255,255,0.95); padding: 60px; border-radius: 20px; text-align: center; border: 4px solid #E1BEE7; }
+        #color-palette { display: flex; flex-direction: row; gap: 8px; } 
+        .divider { width: 2px; height: 35px; background: #ddd; } 
+    </style>
+</head>
+<body>
+
+<div id="presentation-container">
+    <button id="prev-btn" class="nav-btn" onclick="changeSlide(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+    <button id="next-btn" class="nav-btn" onclick="changeSlide(1)"><i class="fa-solid fa-chevron-right"></i></button>
+
+    <!-- Slide 1: Cover (Lavendar) -->
+    <div class="slide active full-bg" style="background-image: url('https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=2070&auto=format&fit=crop');">
+        <div class="overlay">
+            <h1>🌸 東京「ディープ」観光 🌸</h1>
+            <h3 style="font-size: 32px; color: #5e35b1;">N5レベル・名詞修飾マスター</h3>
+            <p style="margin-top: 30px; font-size: 24px;">楽しく日本語を学びましょう！</p>
+        </div>
+    </div>
+
+    <!-- ================= TOPIC 1: ASAKUSA (Blue) ================= -->
+    <div class="slide" style="background-color: #E3F2FD;">
+        <h2>第1章：浅草 🏮 (い形容詞)</h2>
+        <div class="two-column">
+            <div>
+                <h3><i class="fa-solid fa-torii-gate"></i> 状況</h3>
+                <p>浅草の雷門で写真を撮ります。</p>
+                <div style="margin-top: 20px; background: rgba(255,255,255,0.6); padding: 20px; border-radius: 12px;">
+                    <p><strong>ヒント：</strong></p>
+                    <ul>
+                        <li>大きいです (很大)</li>
+                        <li>人 (人)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right"><ruby>見<rt>み</rt></ruby>て！あの<ruby>提灯<rt>ちょうちん</rt></ruby>、すごいね。</div>
+                    <div class="chat-trans-text">你看！那個燈籠，好厲害喔。</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left"><ruby>本当<rt>ほんとう</rt></ruby>だ。とても_____<ruby>提灯<rt>ちょうちん</rt></ruby>だね。</div>
+                    <div class="chat-trans-text">真的耶。是非常大的燈籠呢。(填入：大的)</div>
+                </div>
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right"><ruby>写真<rt>しゃしん</rt></ruby>を<ruby>撮<rt>と</rt></ruby>ろう！でも、_____が<ruby>多<rt>おお</rt></ruby>いね。</div>
+                    <div class="chat-trans-text">來拍照吧！但是，人很多呢。(填入：人)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" style="background-color: #E8EAF6;">
+        <h2>第1章：単語と文法</h2>
+        <h3><i class="fa-solid fa-font"></i> 単語</h3>
+        <div class="vocab-grid">
+            <div class="vocab-item"><span class="vocab-word"><ruby>雷門<rt>かみなりもん</rt></ruby></span><span class="vocab-mean">雷門</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>提灯<rt>ちょうちん</rt></ruby></span><span class="vocab-mean">燈籠</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>大<rt>おお</rt></ruby>きい</span><span class="vocab-mean">大的</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>人<rt>ひと</rt></ruby></span><span class="vocab-mean">人</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>多<rt>おお</rt></ruby>い</span><span class="vocab-mean">多的</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>寺<rt>てら</rt></ruby></span><span class="vocab-mean">寺廟</span></div>
+        </div>
+        <div class="grammar-container">
+            <div class="grammar-box">
+                <span class="grammar-title">い形容詞＋名詞</span>
+                <p><strong>大きい</strong>提灯 (大的燈籠)</p>
+                <p><strong>おいしい</strong>店 (好吃的店)</p>
+            </div>
+            <div class="grammar-box">
+                <span class="grammar-title">い形容詞的特徵</span>
+                <p>字尾是「い」。直接接名詞。</p>
+                <p>例：古(ふる)<strong>い</strong> 寺(てら)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TOPIC 2: TOKYO TOWER (Purple) ================= -->
+    <div class="slide" style="background-color: #F3E5F5;">
+        <h2>第2章：東京タワー 🗼 (な形容詞)</h2>
+        <div class="two-column">
+            <div>
+                <h3><i class="fa-solid fa-tower-observation"></i> 状況</h3>
+                <p>東京タワーを見て感動します。</p>
+                <div style="margin-top: 20px; background: rgba(255,255,255,0.6); padding: 20px; border-radius: 12px;">
+                    <p><strong>ヒント：</strong></p>
+                    <ul>
+                        <li>きれいです (漂亮)</li>
+                        <li>有名です (有名)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">わあ、<ruby>夜<rt>よる</rt></ruby>の<ruby>東京<rt>とうきょう</rt></ruby>タワーだ！</div>
+                    <div class="chat-trans-text">哇，是晚上的東京鐵塔！</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left">とても_____<ruby>景色<rt>けしき</rt></ruby>だね。</div>
+                    <div class="chat-trans-text">是非常漂亮的景色呢。(填入：漂亮的)</div>
+                </div>
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">うん。ここは<ruby>日本<rt>にほん</rt></ruby>で_____<ruby>場所<rt>ばしょ</rt></ruby>だよ。</div>
+                    <div class="chat-trans-text">嗯。這裡是日本很有名的地方喔。(填入：有名的)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" style="background-color: #EDE7F6;">
+        <h2>第2章：単語と文法</h2>
+        <h3><i class="fa-solid fa-font"></i> 単語</h3>
+        <div class="vocab-grid">
+            <div class="vocab-item"><span class="vocab-word"><ruby>景色<rt>けしき</rt></ruby></span><span class="vocab-mean">景色</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>夜<rt>よる</rt></ruby></span><span class="vocab-mean">晚上</span></div>
+            <div class="vocab-item"><span class="vocab-word">きれい（な）</span><span class="vocab-mean">漂亮/乾淨</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>有名<rt>ゆうめい</rt></ruby>（な）</span><span class="vocab-mean">有名</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>静<rt>しず</rt></ruby>か（な）</span><span class="vocab-mean">安靜</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>立派<rt>りっぱ</rt></ruby>（な）</span><span class="vocab-mean">宏偉/氣派</span></div>
+        </div>
+        <div class="grammar-container">
+            <div class="grammar-box">
+                <span class="grammar-title">な形容詞＋名詞</span>
+                <p><strong>きれいな</strong> 景色 (漂亮的景色)</p>
+                <p><strong>有名な</strong> 場所 (有名的地方)</p>
+            </div>
+            <div class="grammar-box">
+                <span class="grammar-title">注意点</span>
+                <p>接名詞的時候要加<strong>「な」</strong>。</p>
+                <p>× きれい景色　〇 きれい<strong>な</strong>景色</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TOPIC 3: UENO PARK (Mint) ================= -->
+    <div class="slide" style="background-color: #E0F2F1;">
+        <h2>第3章：上野動物園 🐼 (名詞)</h2>
+        <div class="two-column">
+            <div>
+                <h3><i class="fa-solid fa-paw"></i> 状況</h3>
+                <p>上野動物園でパンダを見ます。</p>
+                <div style="margin-top: 20px; background: rgba(255,255,255,0.6); padding: 20px; border-radius: 12px;">
+                    <p><strong>ヒント：</strong></p>
+                    <ul>
+                        <li>中国 (中國)</li>
+                        <li>写真 (照片)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">パンダ、かわいいね！</div>
+                    <div class="chat-trans-text">熊貓好可愛喔！</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left">うん。これは_____のパンダだよ。</div>
+                    <div class="chat-trans-text">嗯。這是中國的熊貓喔。(填入：中國)</div>
+                </div>
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">あ、パンダの_____を<ruby>撮<rt>と</rt></ruby>りたい！</div>
+                    <div class="chat-trans-text">啊，我想拍熊貓的照片！(填入：照片)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" style="background-color: #E0F7FA;">
+        <h2>第3章：単語と文法</h2>
+        <h3><i class="fa-solid fa-font"></i> 単語</h3>
+        <div class="vocab-grid">
+            <div class="vocab-item"><span class="vocab-word"><ruby>動物園<rt>どうぶつえん</rt></ruby></span><span class="vocab-mean">動物園</span></div>
+            <div class="vocab-item"><span class="vocab-word">パンダ</span><span class="vocab-mean">熊貓</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>中国<rt>ちゅうごく</rt></ruby></span><span class="vocab-mean">中國</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>写真<rt>しゃしん</rt></ruby></span><span class="vocab-mean">照片</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>子供<rt>こども</rt></ruby></span><span class="vocab-mean">小孩</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>日本<rt>にほん</rt></ruby></span><span class="vocab-mean">日本</span></div>
+        </div>
+        <div class="grammar-container">
+            <div class="grammar-box">
+                <span class="grammar-title">名詞＋の＋名詞</span>
+                <p><strong>中国の</strong> パンダ (產地/屬性)</p>
+                <p><strong>日本語の</strong> 本 (內容)</p>
+            </div>
+            <div class="grammar-box">
+                <span class="grammar-title">所有・屬性</span>
+                <p><strong>私の</strong> 鞄 (我的包包)</p>
+                <p><strong>東京の</strong> 地図 (東京的地圖)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TOPIC 4: SHIBUYA (Light Purple) ================= -->
+    <div class="slide" style="background-color: #D1C4E9;">
+        <h2>第4章：渋谷 🚶 (動詞辞書形)</h2>
+        <div class="two-column">
+            <div>
+                <h3><i class="fa-solid fa-person-walking"></i> 状況</h3>
+                <p>渋谷の交差点を見ます。</p>
+                <div style="margin-top: 20px; background: rgba(255,255,255,0.6); padding: 20px; border-radius: 12px;">
+                    <p><strong>ヒント：</strong></p>
+                    <ul>
+                        <li>渡ります (過馬路)</li>
+                        <li>行きます (去)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">うわあ、<ruby>人<rt>ひと</rt></ruby>が<ruby>多<rt>おお</rt></ruby>いね！</div>
+                    <div class="chat-trans-text">哇，人好多喔！</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left"><ruby>交差点<rt>こうさてん</rt></ruby>を_____<ruby>人<rt>ひと</rt></ruby>がたくさんいるね。</div>
+                    <div class="chat-trans-text">有很多要過馬路的人呢。(填入：過/渡る)</div>
+                </div>
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">みんな、どこへ_____<ruby>人<rt>ひと</rt></ruby>かな？</div>
+                    <div class="chat-trans-text">大家都是要去哪裡的人呢？(填入：去/行く)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" style="background-color: #E1BEE7;">
+        <h2>第4章：単語と文法</h2>
+        <h3><i class="fa-solid fa-font"></i> 単語</h3>
+        <div class="vocab-grid">
+            <div class="vocab-item"><span class="vocab-word"><ruby>交差点<rt>こうさてん</rt></ruby></span><span class="vocab-mean">十字路口</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>渡<rt>わた</rt></ruby>る</span><span class="vocab-mean">過(馬路/橋)</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>行<rt>い</rt></ruby>く</span><span class="vocab-mean">去</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>見<rt>み</rt></ruby>る</span><span class="vocab-mean">看</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>若者<rt>わかもの</rt></ruby></span><span class="vocab-mean">年輕人</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>信号<rt>しんごう</rt></ruby></span><span class="vocab-mean">紅綠燈</span></div>
+        </div>
+        <div class="grammar-container">
+            <div class="grammar-box">
+                <span class="grammar-title">動詞辞書形＋名詞</span>
+                <p><strong>渡(わた)る</strong> 人 (要過馬路的人)</p>
+                <p><strong>食(た)べる</strong> 物 (要吃的東西)</p>
+            </div>
+            <div class="grammar-box">
+                <span class="grammar-title">辞書形 (Dictionary Form)</span>
+                <p>います・あります的普通體（現在/未來）。</p>
+                <p>行きます → <strong>行く</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TOPIC 5: ODAIBA (Sky Blue) ================= -->
+    <div class="slide" style="background-color: #B3E5FC;">
+        <h2>第5章：お台場 🤖 (～ている)</h2>
+        <div class="two-column">
+            <div>
+                <h3><i class="fa-solid fa-robot"></i> 状況</h3>
+                <p>お台場のガンダムを見ます。</p>
+                <div style="margin-top: 20px; background: rgba(255,255,255,0.6); padding: 20px; border-radius: 12px;">
+                    <p><strong>ヒント：</strong></p>
+                    <ul>
+                        <li>立っています (站著)</li>
+                        <li>撮っています (正在拍)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">あれは<ruby>何<rt>なに</rt></ruby>？</div>
+                    <div class="chat-trans-text">那是什麼？</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left">あれは、あそこに_____ロボットだよ。</div>
+                    <div class="chat-trans-text">那是站在此處的機器人喔。(填入：站著/立っている)</div>
+                </div>
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">かっこいいね！<ruby>写真<rt>しゃしん</rt></ruby>を_____<ruby>人<rt>ひと</rt></ruby>が<ruby>多<rt>おお</rt></ruby>いね。</div>
+                    <div class="chat-trans-text">好帥喔！正在拍照的人很多呢。(填入：正在拍/撮っている)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" style="background-color: #B2EBF2;">
+        <h2>第5章：単語と文法</h2>
+        <h3><i class="fa-solid fa-font"></i> 単語</h3>
+        <div class="vocab-grid">
+            <div class="vocab-item"><span class="vocab-word">ロボット</span><span class="vocab-mean">機器人</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>立<rt>た</rt></ruby>つ</span><span class="vocab-mean">站立</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>撮<rt>と</rt></ruby>る</span><span class="vocab-mean">拍照</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>海<rt>うみ</rt></ruby></span><span class="vocab-mean">海</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>歩<rt>ある</rt></ruby>く</span><span class="vocab-mean">走路</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>遊<rt>あそ</rt></ruby>ぶ</span><span class="vocab-mean">玩耍</span></div>
+        </div>
+        <div class="grammar-container">
+            <div class="grammar-box">
+                <span class="grammar-title">～ている＋名詞</span>
+                <p><strong>立(た)っている</strong> ロボット (站著的機器人 - 狀態)</p>
+                <p><strong>撮(と)っている</strong> 人 (正在拍的人 - 動作進行中)</p>
+            </div>
+            <div class="grammar-box">
+                <span class="grammar-title">て形 (Te-form)</span>
+                <p>立ちます → 立って → 立っている</p>
+                <p>撮ります → 撮って → 撮っている</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TOPIC 6: TSUKIJI (Soft Blue) ================= -->
+    <div class="slide" style="background-color: #CFD8DC;">
+        <h2>第6章：築地・お寿司 🍣 (い形容詞)</h2>
+        <div class="two-column">
+            <div>
+                <h3><i class="fa-solid fa-fish"></i> 状況</h3>
+                <p>築地で美味しいお寿司を食べます。</p>
+                <div style="margin-top: 20px; background: rgba(255,255,255,0.6); padding: 20px; border-radius: 12px;">
+                    <p><strong>ヒント：</strong></p>
+                    <ul>
+                        <li>おいしいです (好吃)</li>
+                        <li>新鮮です (新鮮)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">お<ruby>腹<rt>なか</rt></ruby>がすきましたね。</div>
+                    <div class="chat-trans-text">肚子餓了呢。</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left">うん。_____お<ruby>寿司<rt>すし</rt></ruby>を<ruby>食<rt>た</rt></ruby>べましょう。</div>
+                    <div class="chat-trans-text">嗯。來吃好吃的壽司吧。(填入：好吃的)</div>
+                </div>
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right"><ruby>賛成<rt>さんせい</rt></ruby>！<ruby>築地<rt>つきじ</rt></ruby>は、_____<ruby>魚<rt>さかな</rt></ruby>がありますからね。</div>
+                    <div class="chat-trans-text">贊成！因為築地有新鮮的魚呢。(填入：新鮮的)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" style="background-color: #D7CCC8;">
+        <h2>第6章：単語と文法</h2>
+        <h3><i class="fa-solid fa-font"></i> 単語</h3>
+        <div class="vocab-grid">
+            <div class="vocab-item"><span class="vocab-word">お<ruby>寿司<rt>すし</rt></ruby></span><span class="vocab-mean">壽司</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>魚<rt>さかな</rt></ruby></span><span class="vocab-mean">魚</span></div>
+            <div class="vocab-item"><span class="vocab-word">おいしい</span><span class="vocab-mean">好吃</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>新鮮<rt>しんせん</rt></ruby>（な）</span><span class="vocab-mean">新鮮</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>高<rt>たか</rt></ruby>い</span><span class="vocab-mean">貴/高</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>安<rt>やす</rt></ruby>い</span><span class="vocab-mean">便宜</span></div>
+        </div>
+        <div class="grammar-container">
+            <div class="grammar-box">
+                <span class="grammar-title">形容詞修飾 (復習)</span>
+                <p><strong>おいしい</strong> 寿司 (i-Adj)</p>
+                <p><strong>新鮮(しんせん)な</strong> 魚 (na-Adj)</p>
+            </div>
+            <div class="grammar-box">
+                <span class="grammar-title">～ましょう</span>
+                <p>食べ<strong>ましょう</strong> (一起吃吧 / Let's eat)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TOPIC 7: HARAJUKU (Pinkish Purple) ================= -->
+    <div class="slide" style="background-color: #CE93D8;">
+        <h2>第7章：原宿 🍭 (動詞辞書形)</h2>
+        <div class="two-column">
+            <div>
+                <h3><i class="fa-solid fa-ice-cream"></i> 状況</h3>
+                <p>原宿でクレープを食べます。</p>
+                <div style="margin-top: 20px; background: rgba(255,255,255,0.6); padding: 20px; border-radius: 12px;">
+                    <p><strong>ヒント：</strong></p>
+                    <ul>
+                        <li>買います (買)</li>
+                        <li>食べます (吃)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right"><ruby>人<rt>ひと</rt></ruby>が<ruby>多<rt>おお</rt></ruby>いですね。<ruby>何<rt>なに</rt></ruby>がありますか？</div>
+                    <div class="chat-trans-text">人很多呢。有什麼東西嗎？</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left">あそこにクレープを_____<ruby>店<rt>みせ</rt></ruby>がありますよ。</div>
+                    <div class="chat-trans-text">那裡有買可麗餅的店喔。(填入：買/売る/買う)</div>
+                </div>
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">いいですね。<ruby>公園<rt>こうえん</rt></ruby>で_____クレープを<ruby>買<rt>か</rt></ruby>いましょう。</div>
+                    <div class="chat-trans-text">真不錯。我們買要在公園吃的可麗餅吧。(填入：吃/食べる)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" style="background-color: #E1BEE7;">
+        <h2>第7章：単語と文法</h2>
+        <h3><i class="fa-solid fa-font"></i> 単語</h3>
+        <div class="vocab-grid">
+            <div class="vocab-item"><span class="vocab-word">クレープ</span><span class="vocab-mean">可麗餅</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>買<rt>か</rt></ruby>う</span><span class="vocab-mean">買</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>売<rt>う</rt></ruby>る</span><span class="vocab-mean">賣</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>甘<rt>あま</rt></ruby>い</span><span class="vocab-mean">甜</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>若<rt>わか</rt></ruby>い</span><span class="vocab-mean">年輕</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>服<rt>ふく</rt></ruby></span><span class="vocab-mean">衣服</span></div>
+        </div>
+        <div class="grammar-container">
+            <div class="grammar-box">
+                <span class="grammar-title">目的語としての名詞修飾</span>
+                <p><strong>食べる</strong> クレープを 買います。</p>
+                <p>買(要吃的)可麗餅。</p>
+            </div>
+            <div class="grammar-box">
+                <span class="grammar-title">場所の「で」</span>
+                <p>公園<strong>で</strong> 食べます。</p>
+                <p>在公園吃 (動作發生的場所)。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TOPIC 8: AKIHABARA (Cyan) ================= -->
+    <div class="slide" style="background-color: #80DEEA;">
+        <h2>第8章：秋葉原 🎮 (名詞)</h2>
+        <div class="two-column">
+            <div>
+                <h3><i class="fa-solid fa-gamepad"></i> 状況</h3>
+                <p>秋葉原でアニメショップに行きます。</p>
+                <div style="margin-top: 20px; background: rgba(255,255,255,0.6); padding: 20px; border-radius: 12px;">
+                    <p><strong>ヒント：</strong></p>
+                    <ul>
+                        <li>アニメ (動漫)</li>
+                        <li>メイド (女僕)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">ここは<ruby>賑<rt>にぎ</rt></ruby>やかですね！</div>
+                    <div class="chat-trans-text">這裡好熱鬧喔！</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left">はい。ここは_____の<ruby>店<rt>みせ</rt></ruby>がたくさんあります。</div>
+                    <div class="chat-trans-text">對。這裡有很多動漫的店。(填入：動漫)</div>
+                </div>
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">あ、かわいい<ruby>女<rt>おんな</rt></ruby>の<ruby>子<rt>こ</rt></ruby>がいますね。</div>
+                    <div class="chat-trans-text">啊，有可愛的女生耶。</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left">あれは_____の<ruby>喫茶店<rt>きっさてん</rt></ruby>の<ruby>人<rt>ひと</rt></ruby>ですよ。</div>
+                    <div class="chat-trans-text">那是女僕咖啡店的人喔。(填入：女僕)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" style="background-color: #B2DFDB;">
+        <h2>第8章：単語と文法</h2>
+        <h3><i class="fa-solid fa-font"></i> 単語</h3>
+        <div class="vocab-grid">
+            <div class="vocab-item"><span class="vocab-word">アニメ</span><span class="vocab-mean">動畫</span></div>
+            <div class="vocab-item"><span class="vocab-word">ゲーム</span><span class="vocab-mean">遊戲</span></div>
+            <div class="vocab-item"><span class="vocab-word">メイド</span><span class="vocab-mean">女僕</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>店<rt>みせ</rt></ruby></span><span class="vocab-mean">店</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>電気<rt>でんき</rt></ruby></span><span class="vocab-mean">電器/電</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>好<rt>す</rt></ruby>き（な）</span><span class="vocab-mean">喜歡</span></div>
+        </div>
+        <div class="grammar-container">
+            <div class="grammar-box">
+                <span class="grammar-title">名詞＋の＋名詞</span>
+                <p><strong>アニメの</strong> 店 (內容)</p>
+                <p><strong>メイドの</strong> 喫茶店 (屬性)</p>
+            </div>
+            <div class="grammar-box">
+                <span class="grammar-title">～があります</span>
+                <p>店<strong>が</strong> あります。</p>
+                <p>有店 (存在)。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TOPIC 9: SOUVENIR (Lavender) ================= -->
+    <div class="slide" style="background-color: #B39DDB;">
+        <h2>第9章：お土産 🎁 (動詞た形)</h2>
+        <div class="two-column">
+            <div>
+                <h3><i class="fa-solid fa-gift"></i> 状況</h3>
+                <p>買ったお土産を確認します。</p>
+                <div style="margin-top: 20px; background: rgba(255,255,255,0.6); padding: 20px; border-radius: 12px;">
+                    <p><strong>ヒント：</strong></p>
+                    <ul>
+                        <li>買いました (買了)</li>
+                        <li>撮りました (拍了)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">たくさん<ruby>買<rt>か</rt></ruby>い<ruby>物<rt>もの</rt></ruby>をしましたね。</div>
+                    <div class="chat-trans-text">買了很多東西呢。</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left">はい。これは<ruby>浅草<rt>あさくさ</rt></ruby>で_____お<ruby>菓子<rt>かし</rt></ruby>です。</div>
+                    <div class="chat-trans-text">對。這是在淺草買的點心。(填入：買了/買った)</div>
+                </div>
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">いいですね。これは<ruby>何<rt>なん</rt></ruby>ですか？</div>
+                    <div class="chat-trans-text">真好。這是什麼？</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left"><ruby>東京<rt>とうきょう</rt></ruby>タワーで_____<ruby>写真<rt>しゃしん</rt></ruby>ですよ。</div>
+                    <div class="chat-trans-text">這是在東京鐵塔拍的照片喔。(填入：拍了/撮った)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" style="background-color: #D1C4E9;">
+        <h2>第9章：単語と文法</h2>
+        <h3><i class="fa-solid fa-font"></i> 単語</h3>
+        <div class="vocab-grid">
+            <div class="vocab-item"><span class="vocab-word">お<ruby>土産<rt>みやげ</rt></ruby></span><span class="vocab-mean">伴手禮</span></div>
+            <div class="vocab-item"><span class="vocab-word">お<ruby>菓子<rt>かし</rt></ruby></span><span class="vocab-mean">點心/零食</span></div>
+            <div class="vocab-item"><span class="vocab-word">Ｔシャツ</span><span class="vocab-mean">T恤</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>買<rt>か</rt></ruby>い<ruby>物<rt>もの</rt></ruby></span><span class="vocab-mean">購物</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>家族<rt>かぞく</rt></ruby></span><span class="vocab-mean">家人</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>友達<rt>ともだち</rt></ruby></span><span class="vocab-mean">朋友</span></div>
+        </div>
+        <div class="grammar-container">
+            <div class="grammar-box">
+                <span class="grammar-title">動詞た形＋名詞</span>
+                <p><strong>買(か)った</strong> お菓子 (已經買了的點心)</p>
+                <p><strong>撮(と)った</strong> 写真 (已經拍了的照片)</p>
+            </div>
+            <div class="grammar-box">
+                <span class="grammar-title">た形 (Ta-form)</span>
+                <p>買います → 買って → 買った</p>
+                <p>撮ります → 撮って → 撮った</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TOPIC 10: HOTEL (Light Blue) ================= -->
+    <div class="slide" style="background-color: #81D4FA;">
+        <h2>第10章：ホテル 🏨 (動詞辞書形)</h2>
+        <div class="two-column">
+            <div>
+                <h3><i class="fa-solid fa-bed"></i> 状況</h3>
+                <p>新宿のホテルに行きます。</p>
+                <div style="margin-top: 20px; background: rgba(255,255,255,0.6); padding: 20px; border-radius: 12px;">
+                    <p><strong>ヒント：</strong></p>
+                    <ul>
+                        <li>泊まります (住宿)</li>
+                        <li>帰ります (回去)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right"><ruby>疲<rt>つか</rt></ruby>れましたね。ホテルはどこですか？</div>
+                    <div class="chat-trans-text">好累喔。飯店在哪裡？</div>
+                </div>
+                <div class="chat-left-wrapper">
+                    <span class="chat-label">友達</span>
+                    <div class="chat-bubble chat-left"><ruby>新宿<rt>しんじゅく</rt></ruby>です。<ruby>今日<rt>きょう</rt></ruby>_____ホテルは<ruby>新<rt>あたら</rt></ruby>しいですよ。</div>
+                    <div class="chat-trans-text">在新宿。今天要住的飯店很新喔。(填入：住/泊まる)</div>
+                </div>
+                <div class="chat-right-wrapper">
+                    <span class="chat-label">あなた</span>
+                    <div class="chat-bubble chat-right">よかった。<ruby>明日<rt>あした</rt></ruby>は、<ruby>国<rt>くに</rt></ruby>へ_____<ruby>日<rt>ひ</rt></ruby>ですね。</div>
+                    <div class="chat-trans-text">太好了。明天是回國的日子呢。(填入：回/帰る)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide" style="background-color: #B3E5FC;">
+        <h2>第10章：単語と文法</h2>
+        <h3><i class="fa-solid fa-font"></i> 単語</h3>
+        <div class="vocab-grid">
+            <div class="vocab-item"><span class="vocab-word">ホテル</span><span class="vocab-mean">飯店</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>泊<rt>と</rt></ruby>まる</span><span class="vocab-mean">住宿/過夜</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>帰<rt>かえ</rt></ruby>る</span><span class="vocab-mean">回家/回國</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>新<rt>あたら</rt></ruby>しい</span><span class="vocab-mean">新的</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>疲<rt>つか</rt></ruby>れる</span><span class="vocab-mean">累</span></div>
+            <div class="vocab-item"><span class="vocab-word"><ruby>空港<rt>くうこう</rt></ruby></span><span class="vocab-mean">機場</span></div>
+        </div>
+        <div class="grammar-container">
+            <div class="grammar-box">
+                <span class="grammar-title">動詞辞書形＋名詞 (未来)</span>
+                <p><strong>泊(と)まる</strong> ホテル (要住的飯店)</p>
+                <p><strong>帰(かえ)る</strong> 日 (要回去的日子)</p>
+            </div>
+            <div class="grammar-box">
+                <span class="grammar-title">まとめ</span>
+                <p>辞書形＝未来・習慣</p>
+                <p>た形＝過去・完了</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PRACTICE: Fun Quiz ================= -->
+    <div class="slide" style="background-color: #F8BBD0;">
+        <h2><i class="fa-solid fa-pencil"></i> 旅の手帳：名詞修飾クイズ 📝</h2>
+        <p>カッコの中を翻訳して、正しい日本語を書いてみましょう！（クリックで答えを表示）</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+            <div class="quiz-card">
+                <h3>1. 喜歡的人</h3>
+                <p>私は <span class="quiz-blank" onclick="this.classList.toggle('revealed'); this.innerText='やさしい'">（溫柔的）</span> 人が好きです。</p>
+            </div>
+            
+            <div class="quiz-card">
+                <h3>2. 買了的東西</h3>
+                <p>これは、デパートで <span class="quiz-blank" onclick="this.classList.toggle('revealed'); this.innerText='買った'">（買了的）</span> 鞄です。</p>
+            </div>
+
+            <div class="quiz-card">
+                <h3>3. 有名的地方</h3>
+                <p>京都は <span class="quiz-blank" onclick="this.classList.toggle('revealed'); this.innerText='有名な'">（有名的）</span> 所です。</p>
+            </div>
+
+            <div class="quiz-card">
+                <h3>4. 去的人</h3>
+                <p>明日、東京へ <span class="quiz-blank" onclick="this.classList.toggle('revealed'); this.innerText='行く'">（要去的）</span> 人は誰ですか。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide: Closing -->
+    <div class="slide full-bg" style="background-image: url('https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=2070&auto=format&fit=crop');">
+        <div class="overlay">
+            <h1>レッスン終了！🎉</h1>
+            <p>お疲れ様でした。</p>
+            <p style="margin-top:20px;">次回は、実際に東京のプランを立ててみましょう！</p>
+        </div>
+    </div>
+
+    <!-- Canvas & Layers -->
+</div>
+
+<!-- Input for Image Upload -->
+<input type="file" id="image-upload" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
+
+<!-- Toolbar -->
+<div id="toolbar">
+    <button class="tool-btn active" id="btn-move" onclick="setMode('move')"><i class="fa-solid fa-up-down-left-right"></i></button>
+    <button class="tool-btn" id="btn-pen" onclick="setMode('pen')"><i class="fa-solid fa-pen"></i></button>
+    <button class="tool-btn" id="btn-eraser" onclick="setMode('eraser')"><i class="fa-solid fa-eraser"></i></button>
+    <button class="tool-btn" id="btn-text" onclick="setMode('text')"><i class="fa-solid fa-font"></i></button>
+    <button class="tool-btn" id="btn-image" onclick="triggerImageUpload()"><i class="fa-solid fa-image"></i></button>
+    <div class="divider"></div>
+    <div id="color-palette"></div>
+    <div class="divider"></div>
+    <button class="tool-btn" onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i></button>
+</div>
+
+<script>
+    const colors = ['#5e35b1', '#d81b60', '#e53935', '#fb8c00', '#fdd835', '#43a047', '#1e88e5', '#3949ab', '#546e7a', '#000000'];
+    let currentMode = 'move', currentColor = colors[0], isDrawing = false, currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+
+    function init() {
+        // Palette
+        const palette = document.getElementById('color-palette');
+        colors.forEach((color, i) => {
+            const s = document.createElement('div');
+            s.className = `color-swatch ${i===0?'active':''}`;
+            s.style.backgroundColor = color;
+            s.style.width = '25px'; s.style.height = '25px'; s.style.borderRadius = '50%'; s.style.cursor = 'pointer'; s.style.border = '2px solid white'; s.style.boxShadow = '0 0 0 1px #ddd';
+            s.onclick = () => { currentColor = color; document.querySelectorAll('.color-swatch').forEach(el=>el.style.transform='scale(1)'); s.style.transform='scale(1.2)'; };
+            palette.appendChild(s);
+        });
+
+        // Setup Slides
+        slides.forEach(slide => {
+            const canvas = document.createElement('canvas');
+            canvas.className = 'drawing-canvas'; canvas.width = 1280; canvas.height = 720;
+            slide.appendChild(canvas);
+            const content = document.createElement('div');
+            content.className = 'content-layer';
+            slide.appendChild(content);
+            setupCanvas(canvas);
+            slide.addEventListener('mousedown', (e) => handleSlideClick(e, content));
+        });
+        updateNav();
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${mode}`).classList.add('active');
+        const canvases = document.querySelectorAll('.drawing-canvas');
+        const contents = document.querySelectorAll('.content-layer');
+        const chats = document.querySelectorAll('.chat-container');
+        
+        if (mode === 'pen' || mode === 'eraser') {
+            canvases.forEach(c => c.style.pointerEvents = 'auto');
+            contents.forEach(c => c.style.pointerEvents = 'none');
+            chats.forEach(c => c.style.pointerEvents = 'none');
+            document.body.style.cursor = 'crosshair';
+        } else {
+            canvases.forEach(c => c.style.pointerEvents = 'none');
+            contents.forEach(c => c.style.pointerEvents = 'none'); // keep none, allow pointer-events on children
+            chats.forEach(c => c.style.pointerEvents = 'auto');
+            document.body.style.cursor = mode === 'text' ? 'text' : 'default';
+            document.querySelectorAll('.draggable-text, .draggable-image').forEach(el => el.style.pointerEvents = 'auto');
+        }
+    }
+
+    function setupCanvas(canvas) {
+        const ctx = canvas.getContext('2d');
+        canvas.addEventListener('mousedown', e => {
+            if (currentMode !== 'pen' && currentMode !== 'eraser') return;
+            isDrawing = true; ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        });
+        canvas.addEventListener('mousemove', e => {
+            if (!isDrawing) return;
+            ctx.lineWidth = currentMode === 'eraser' ? 20 : 3;
+            ctx.lineCap = 'round';
+            if (currentMode === 'eraser') ctx.globalCompositeOperation = 'destination-out';
+            else { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = currentColor; }
+            ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke();
+        });
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+    }
+
+    function handleSlideClick(e, layer) {
+        if (currentMode !== 'text') return;
+        if (e.target.closest('.draggable-text') || e.target.closest('.draggable-image') || e.target.closest('.chat-container')) return;
+        const div = document.createElement('div');
+        div.className = 'draggable-text'; div.contentEditable = true; div.innerHTML = 'Text';
+        div.style.left = e.offsetX + 'px'; div.style.top = e.offsetY + 'px';
+        div.style.color = currentColor;
+        setupDrag(div);
+        div.addEventListener('dblclick', () => div.remove());
+        layer.appendChild(div);
+        setTimeout(() => div.focus(), 0);
+    }
+
+    function triggerImageUpload() { document.getElementById('image-upload').click(); }
+    function handleImageUpload(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const layer = slides[currentSlide].querySelector('.content-layer');
+                const div = document.createElement('div');
+                div.className = 'draggable-image'; div.style.left = '100px'; div.style.top = '100px';
+                const img = document.createElement('img'); img.src = e.target.result;
+                div.appendChild(img); setupDrag(div);
+                div.addEventListener('dblclick', () => div.remove());
+                layer.appendChild(div);
+            };
+            reader.readAsDataURL(input.files[0]);
+            input.value = '';
+        }
+    }
+
+    function setupDrag(el) {
+        let isDrag = false, startX, startY, initL, initT;
+        el.addEventListener('mousedown', e => {
+            if (currentMode !== 'move') return;
+            // Check for resize handle (bottom-right)
+            if (el.classList.contains('draggable-image') && e.offsetX > el.offsetWidth - 20 && e.offsetY > el.offsetHeight - 20) return;
+            isDrag = true; startX = e.clientX; startY = e.clientY;
+            initL = el.offsetLeft; initT = el.offsetTop;
+            e.stopPropagation();
+        });
+        window.addEventListener('mousemove', e => {
+            if (!isDrag) return;
+            el.style.left = (initL + e.clientX - startX) + 'px';
+            el.style.top = (initT + e.clientY - startY) + 'px';
+        });
+        window.addEventListener('mouseup', () => isDrag = false);
+    }
+
+    function changeSlide(dir) {
+        slides[currentSlide].classList.remove('active');
+        currentSlide = Math.max(0, Math.min(slides.length - 1, currentSlide + dir));
+        slides[currentSlide].classList.add('active');
+        updateNav();
+    }
+    function updateNav() {
+        document.getElementById('prev-btn').disabled = currentSlide === 0;
+        document.getElementById('next-btn').disabled = currentSlide === slides.length - 1;
+    }
+    function exportPDF() { window.print(); }
+
+    init();
+</script>
+</body>
+</html>
